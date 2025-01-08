@@ -93,6 +93,11 @@ python3 src/keep-presence.py
                                   random interval between start and stop seconds. 
                                   Note: Overwrites the seconds argument.
 
+
+-t, --time-between-idle-checks TIME_BETWEEN_IDLE_CHECKS
+                                  Define in seconds how long to wait between checks if a user is considered idle. Default 300.
+
+
 ```
 
 ## FAQ: 
