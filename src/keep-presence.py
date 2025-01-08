@@ -19,13 +19,13 @@ MOUSE_DIRECTION_DELTA = 0
 RAND_INTERVAL_START = 0
 RAND_INTERVAL_STOP = 0
 
-move_mouse_every_seconds = 300
+SLEEP_BETWEEN_IDLE_CHECKS = move_mouse_every_seconds = 300
 mouse_direction = 0
 
 
 def define_custom_seconds():
     global move_mouse_every_seconds, PIXELS_TO_MOVE, PRESS_SHIFT_KEY, MOVE_MOUSE, SCROLL_ACTION, \
-        MOUSE_DIRECTION_DELTA, RANDOM_MODE, RAND_INTERVAL_START, RAND_INTERVAL_STOP
+        MOUSE_DIRECTION_DELTA, RANDOM_MODE, RAND_INTERVAL_START, RAND_INTERVAL_STOP, SLEEP_BETWEEN_IDLE_CHECKS
 
     parser = argparse.ArgumentParser(
         description="This program moves the mouse or press a key when it detects that you are away. "
@@ -34,7 +34,7 @@ def define_custom_seconds():
 
     parser.add_argument(
         "-s", "--seconds", type=int,
-        help="Define in seconds how long to wait after a user is considered idle. Default 300.")
+        help="Define in seconds how long to wait between presence enforcement. Default 300.")
 
     parser.add_argument(
         "-p", "--pixels", type=int,
@@ -58,6 +58,10 @@ def define_custom_seconds():
              "Execute actions based on a random interval between start and stop seconds. "
              "Note: Overwrites the seconds argument.")
 
+    parser.add_argument(
+        "-t", "--time-between-idle-checks", type=int,
+        help="Define in seconds how long to wait between checks if a user is considered idle. Default 300.")
+
     args = parser.parse_args()
     mode = args.mode
     random_seconds_interval = args.random
@@ -79,6 +83,9 @@ def define_custom_seconds():
         if RAND_INTERVAL_START > RAND_INTERVAL_STOP:
             print("Error: Random initial number needs to be lower than random limit number.")
             exit()
+
+    if args.time_between_idle_checks:
+        SLEEP_BETWEEN_IDLE_CHECKS = int(args.time_between_idle_checks)
 
     is_both_enabled = 'both' == mode
     is_keyboard_enabled = 'keyboard' == mode or is_both_enabled
@@ -104,6 +111,9 @@ def define_custom_seconds():
         print(get_now_timestamp(), "Random timing is enabled.")
     else:
         print(get_now_timestamp(), 'Running every', str(move_mouse_every_seconds), 'seconds')
+
+    if args.time_between_idle_checks:
+        print(get_now_timestamp(), 'Waiting', SLEEP_BETWEEN_IDLE_CHECKS, 'seconds between detecting presence')
 
     print('--------')
 
@@ -170,15 +180,17 @@ try:
     while 1:
         currentPosition = mouse.position
         is_user_away = currentPosition == lastSavePosition
-
         if is_user_away:
             execute_keep_awake_action()
             currentPosition = mouse.position
 
+        lastSavePosition = currentPosition
+
         if not is_user_away:
             print(get_now_timestamp(), 'User activity detected')
-
-        lastSavePosition = currentPosition
+            print(get_now_timestamp(), 'Waiting', SLEEP_BETWEEN_IDLE_CHECKS, 'seconds before checking again')
+            time.sleep(SLEEP_BETWEEN_IDLE_CHECKS)
+            continue
 
         if RANDOM_MODE:
             rand_delay = random.randint(RAND_INTERVAL_START, RAND_INTERVAL_STOP)
